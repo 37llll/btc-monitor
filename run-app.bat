@@ -1,0 +1,3 @@
+@echo off
+echo 正在启动BTC价格浮动窗口...
+npx electron . 
