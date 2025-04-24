@@ -177,13 +177,28 @@ async function fetchPrice(forceRefresh = false) {
     
     console.log('获取到数据:', mode, data);
     
-    if (data && data.bitcoin && data.gold) {
-      updateUI(
-        Math.floor(data.bitcoin.usd) || 0, 
-        parseFloat(data.bitcoin.usd_24h_change).toFixed(2) || 0, 
-        parseFloat(data.gold.usd).toFixed(2) || 0, 
-        parseFloat(data.gold.usd_24h_change).toFixed(2) || 0
-      );
+    // 修复数据处理逻辑
+    if (data) {
+      // 提取BTC和黄金数据
+      let btcPrice = 0;
+      let btcChange = 0;
+      let goldPrice = 0;
+      let goldChange = 0;
+      
+      // 从返回数据中获取BTC价格数据
+      if (data.bitcoin) {
+        btcPrice = Math.floor(data.bitcoin.usd) || 0;
+        btcChange = parseFloat(data.bitcoin.usd_24h_change).toFixed(2) || 0;
+      }
+      
+      // 从返回数据中获取黄金价格数据
+      if (data.gold) {
+        goldPrice = parseFloat(data.gold.usd).toFixed(2) || 0;
+        goldChange = parseFloat(data.gold.usd_24h_change).toFixed(2) || 0;
+      }
+      
+      // 更新UI
+      updateUI(btcPrice, btcChange, goldPrice, goldChange);
     } else {
       console.error('数据格式不正确:', data);
       document.getElementById('price').textContent = '数据错误';
@@ -201,9 +216,20 @@ async function fetchPrice(forceRefresh = false) {
 // 更新UI显示
 function updateUI(btcPrice, btcChange, goldPrice, goldChange) {
   console.log('UI更新中...');
-  document.querySelector('.spinner').style.display = 'none';
   
-  if (!btcPrice || !btcChange || !goldPrice || !goldChange) {
+  // 检查spinner元素是否存在，不存在就创建一个
+  let spinner = document.querySelector('.spinner');
+  if (!spinner) {
+    spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    spinner.style.display = 'none';
+    document.body.appendChild(spinner);
+  } else {
+    spinner.style.display = 'none';
+  }
+  
+  // 验证数据完整性
+  if (!btcPrice && !goldPrice) {
     console.error('无有效价格数据');
     document.getElementById('price').textContent = '无法获取价格';
     return;
@@ -217,17 +243,40 @@ function updateUI(btcPrice, btcChange, goldPrice, goldChange) {
 
   if (isGoldMode) {
     // 显示黄金价格 (人民币/克)
-    priceElement.textContent = `¥${goldPrice} / 克`;
-    updateChangeDisplay(changeElement, goldChange);
+    if (goldPrice) {
+      priceElement.textContent = `¥${goldPrice} / 克`;
+      updateChangeDisplay(changeElement, goldChange);
+    } else {
+      priceElement.textContent = '数据加载中...';
+      changeElement.textContent = '--';
+      changeElement.className = 'neutral';
+    }
   } else {
     // 显示比特币价格 (美元)
-    priceElement.textContent = `$${btcPrice}`;
-    updateChangeDisplay(changeElement, btcChange);
+    if (btcPrice) {
+      priceElement.textContent = `$${btcPrice}`;
+      updateChangeDisplay(changeElement, btcChange);
+    } else {
+      priceElement.textContent = '数据加载中...';
+      changeElement.textContent = '--';
+      changeElement.className = 'neutral';
+    }
+  }
+  
+  // 添加更新时间元素（如果不存在）
+  let updateTimeElement = document.getElementById('update-time');
+  if (!updateTimeElement) {
+    updateTimeElement = document.createElement('div');
+    updateTimeElement.id = 'update-time';
+    updateTimeElement.style.fontSize = '8px';
+    updateTimeElement.style.color = '#666';
+    updateTimeElement.style.marginTop = '5px';
+    updateTimeElement.style.textAlign = 'center';
+    container.appendChild(updateTimeElement);
   }
   
   // 显示数据更新时间
-  document.getElementById('update-time').textContent = 
-    `最后更新: ${new Date().toLocaleTimeString()}`;
+  updateTimeElement.textContent = `最后更新: ${new Date().toLocaleTimeString()}`;
   
   // 更新窗口标题以显示当前价格
   updateDisplayTitle(window.electronAPI.getCurrentDisplayMode());

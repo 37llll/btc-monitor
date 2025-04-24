@@ -223,35 +223,31 @@ function provideFallbackData(type, usdToCny = 7.2) {
   // 为了让模拟数据有变化，我们使用随机值
   const getRandomChange = () => (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2).toFixed(2);
   
-  if (type === 'btc') {
-    // 生成60000-70000之间的随机BTC价格
-    const price = Math.floor(60000 + Math.random() * 10000);
-    const change = getRandomChange();
-    return {
-      bitcoin: {
-        usd: price,
-        usd_24h_change: change
-      },
-      gold: null
-    };
-  } else {
-    // 生成黄金价格 (人民币/克)
-    // 国际金价约为2000-2100美元/盎司
-    // 1盎司 = 31.1035克
-    // 转换为人民币/克
-    const goldUsdPerOz = 2000 + Math.random() * 100; // 美元/盎司
-    const gramsPerOz = 31.1035;
-    
-    // 计算: (美元/盎司) * (人民币/美元) / (克/盎司) = 人民币/克
-    const goldCnyPerGram = (goldUsdPerOz * usdToCny / gramsPerOz).toFixed(2);
-    
-    const change = getRandomChange();
-    return {
-      gold: {
-        usd: parseFloat(goldCnyPerGram), // 字段名仍为usd，但实际上是人民币/克
-        usd_24h_change: change
-      },
-      bitcoin: null
-    };
-  }
+  // 不管请求的类型是什么，都同时返回BTC和黄金的数据，防止空值错误
+  // 生成60000-70000之间的随机BTC价格
+  const btcPrice = Math.floor(60000 + Math.random() * 10000);
+  const btcChange = getRandomChange();
+  
+  // 生成黄金价格 (人民币/克)
+  // 国际金价约为2000-2100美元/盎司
+  // 1盎司 = 31.1035克
+  // 转换为人民币/克
+  const goldUsdPerOz = 2000 + Math.random() * 100; // 美元/盎司
+  const gramsPerOz = 31.1035;
+  
+  // 计算: (美元/盎司) * (人民币/美元) / (克/盎司) = 人民币/克
+  const goldCnyPerGram = (goldUsdPerOz * usdToCny / gramsPerOz).toFixed(2);
+  const goldChange = getRandomChange();
+  
+  // 返回完整的数据对象，包含两种价格
+  return {
+    bitcoin: {
+      usd: btcPrice,
+      usd_24h_change: btcChange
+    },
+    gold: {
+      usd: parseFloat(goldCnyPerGram), // 字段名仍为usd，但实际上是人民币/克
+      usd_24h_change: goldChange
+    }
+  };
 } 
