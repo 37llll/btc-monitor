@@ -154,43 +154,174 @@ async function fetchBTCPrice() {
 
 // 获取黄金价格
 async function fetchGoldPrice() {
-  // 获取美元对人民币汇率 (模拟固定汇率，实际应用中应该从API获取)
-  const usdToCny = 7.2;
+  // 定义黄金价格API源
+  const goldApiSources = [
+    {
+      name: 'CoinGecko',
+      url: 'https://api.coingecko.com/api/v3/simple/price?ids=gold&vs_currencies=cny&include_24hr_change=true',
+      handler: (data) => {
+        if (data && data.gold && data.gold.cny) {
+          // CoinGecko返回的价格是每盎司价格，需要转换为每克
+          const pricePerOunce = parseFloat(data.gold.cny);
+          const pricePerGram = (pricePerOunce / 31.1035).toFixed(2); // 1盎司 = 31.1035克
+          const priceChange = data.gold.cny_24h_change || 0;
+          
+          return {
+            gold: {
+              usd: parseFloat(pricePerGram), // 人民币/克
+              usd_24h_change: parseFloat(priceChange).toFixed(2)
+            }
+          };
+        }
+        throw new Error('无效的CoinGecko黄金价格响应格式');
+      }
+    },
+    {
+      name: 'PublicGoldAPI',
+      url: 'https://data-asg.goldprice.org/dbXRates/CNY',
+      handler: (data) => {
+        if (data && data.items && data.items[0]) {
+          // 这个API返回的是盎司价格，需要转换为克
+          const pricePerOunce = parseFloat(data.items[0].xauPrice);
+          const pricePerGram = (pricePerOunce / 31.1035).toFixed(2); // 1盎司 = 31.1035克
+          // 注意：这个API没有直接提供价格变化，设置为0或尝试从其他地方获取
+          const priceChange = 0;
+          
+          return {
+            gold: {
+              usd: parseFloat(pricePerGram), // 人民币/克
+              usd_24h_change: priceChange
+            }
+          };
+        }
+        throw new Error('无效的公开黄金API响应格式');
+      }
+    },
+    {
+      name: 'ExchangeRatesAPI',
+      url: 'https://open.er-api.com/v6/latest/XAU',
+      handler: (data) => {
+        if (data && data.rates && data.rates.CNY) {
+          // XAU是黄金的ISO代码，1XAU = 1盎司黄金
+          // 汇率是1盎司黄金=多少CNY
+          const cnyPerOunce = parseFloat(data.rates.CNY);
+          const cnyPerGram = (cnyPerOunce / 31.1035).toFixed(2); // 转换为克
+          // 这个API不提供价格变化
+          const priceChange = 0;
+          
+          return {
+            gold: {
+              usd: parseFloat(cnyPerGram), // 人民币/克
+              usd_24h_change: priceChange
+            }
+          };
+        }
+        throw new Error('无效的汇率API响应格式');
+      }
+    }
+  ];
   
-  // 使用模拟数据，黄金价格单位为人民币/克
-  console.log('使用黄金价格模拟数据 (人民币/克)');
-  
-  try {
-    // 尝试获取真实汇率 (仅作为备选，如果获取失败则使用固定汇率)
-    const exchangeRate = await tryGetExchangeRate(usdToCny);
-    return provideFallbackData('gold', exchangeRate);
-  } catch (error) {
-    console.error('获取汇率失败，使用固定汇率:', usdToCny);
-    return provideFallbackData('gold', usdToCny);
+  // 依次尝试每个API源
+  for (const api of goldApiSources) {
+    try {
+      console.log(`尝试从${api.name}获取黄金价格...`);
+      const response = await makeRequest(api.url, api.options);
+      const data = api.handler(response);
+      console.log(`${api.name}黄金数据获取成功:`, data);
+      return data;
+    } catch (error) {
+      console.error(`${api.name}获取失败:`, error.message);
+      // 继续尝试下一个API
+      continue;
+    }
   }
+  
+  // 如果所有API都失败，回退到基于当前汇率计算的国际金价
+  try {
+    // 尝试获取国际金价 (美元/盎司) 并转换为人民币/克
+    console.log('尝试从金价计算API获取数据...');
+    // 使用固定的国际金价（实际应用中应该从开放API获取）
+    // 这里使用一个合理的近期黄金价格（美元/盎司）
+    const goldPriceUSD = 2250; // 美元/盎司
+    const exchangeRate = await tryGetExchangeRate(7.2);
+    
+    // 计算: (美元/盎司) * (人民币/美元) / (克/盎司) = 人民币/克
+    const gramsPerOz = 31.1035;
+    const goldCnyPerGram = (goldPriceUSD * exchangeRate / gramsPerOz).toFixed(2);
+    
+    console.log('基于固定金价计算:', goldCnyPerGram, '人民币/克');
+    
+    return {
+      gold: {
+        usd: parseFloat(goldCnyPerGram),
+        usd_24h_change: 0 // 没有变化数据
+      }
+    };
+  } catch (error) {
+    console.error('金价计算失败:', error.message);
+  }
+  
+  // 所有API和计算方法都失败，返回模拟数据
+  console.log('所有黄金价格获取方法都失败，使用模拟数据');
+  return provideFallbackData('gold');
 }
 
 // 尝试获取真实美元兑人民币汇率
 async function tryGetExchangeRate(fallbackRate) {
-  try {
-    // 尝试从公开API获取汇率数据
-    const response = await makeRequest('https://open.er-api.com/v6/latest/USD');
-    if (response && response.rates && response.rates.CNY) {
-      console.log('获取到实时汇率: 1 USD =', response.rates.CNY, 'CNY');
-      return response.rates.CNY;
+  const exchangeRateAPIs = [
+    {
+      name: 'ExchangeRatesAPI',
+      url: 'https://open.er-api.com/v6/latest/USD',
+      handler: (data) => {
+        if (data && data.rates && data.rates.CNY) {
+          return data.rates.CNY;
+        }
+        throw new Error('无效的汇率API响应');
+      }
+    },
+    {
+      name: 'FloatRates',
+      url: 'https://www.floatrates.com/daily/usd.json',
+      handler: (data) => {
+        if (data && data.cny && data.cny.rate) {
+          return data.cny.rate;
+        }
+        throw new Error('无效的浮动汇率API响应');
+      }
     }
-  } catch (error) {
-    console.error('获取汇率API失败:', error.message);
+  ];
+  
+  // 尝试所有汇率API
+  for (const api of exchangeRateAPIs) {
+    try {
+      console.log(`尝试从${api.name}获取汇率...`);
+      const response = await makeRequest(api.url);
+      const rate = api.handler(response);
+      console.log(`获取到实时汇率: 1 USD =`, rate, 'CNY');
+      return rate;
+    } catch (error) {
+      console.error(`${api.name}汇率获取失败:`, error.message);
+      continue;
+    }
   }
+  
+  console.log('所有汇率API都失败，使用默认汇率:', fallbackRate);
   return fallbackRate; // 使用默认汇率
 }
 
 // 通用的HTTP请求函数
-function makeRequest(url) {
+function makeRequest(url, options = {}) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.setRequestHeader('Accept', 'application/json');
+    
+    // 添加自定义头信息
+    if (options.headers) {
+      Object.keys(options.headers).forEach(key => {
+        xhr.setRequestHeader(key, options.headers[key]);
+      });
+    }
     
     xhr.onload = function() {
       if (xhr.status === 200) {

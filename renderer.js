@@ -107,11 +107,11 @@ function updateDisplayTitle(mode) {
   
   if (mode === 'btc') {
     titleElement.textContent = 'BTC/USD';
-    titleElement.style.color = '#f7931a'; // 比特币橙色
+    titleElement.style.color = 'rgba(247, 147, 26, 0.15)'; // 比特币橙色，极低透明度
     document.title = 'BTC价格 (美元)';
   } else {
     titleElement.textContent = '金价/克';  // 修改为中文金价/克
-    titleElement.style.color = '#ffd700'; // 黄金颜色
+    titleElement.style.color = 'rgba(255, 215, 0, 0.15)'; // 黄金颜色，极低透明度
     document.title = '黄金价格 (人民币/克)';
   }
   
@@ -244,6 +244,7 @@ function updateUI(btcPrice, btcChange, goldPrice, goldChange) {
   if (isGoldMode) {
     // 显示黄金价格 (人民币/克)
     if (goldPrice) {
+      // 直接显示API获取的价格，不做额外处理
       priceElement.textContent = `¥${goldPrice} / 克`;
       updateChangeDisplay(changeElement, goldChange);
     } else {
@@ -298,12 +299,29 @@ function initializeApp() {
   titleElement = document.createElement('div');
   titleElement.className = 'title';
   titleElement.textContent = 'BTC/USD';
-  titleElement.style.color = '#f7931a'; // 比特币橙色
+  titleElement.style.color = 'rgba(247, 147, 26, 0.15)'; // 比特币橙色，极低透明度
   titleElement.style.fontWeight = 'bold'; // 加粗标题
   titleElement.style.fontSize = '14px'; // 稍微增大字号
   
   // 插入标题元素
   container.insertBefore(titleElement, container.firstChild);
+  
+  // 设置鼠标悬停事件，使标题颜色随透明度变化
+  document.body.addEventListener('mouseenter', () => {
+    if (window.electronAPI.getCurrentDisplayMode() === 'btc') {
+      titleElement.style.color = 'rgba(247, 147, 26, 1)'; // 完全不透明
+    } else {
+      titleElement.style.color = 'rgba(255, 215, 0, 1)'; // 完全不透明
+    }
+  });
+  
+  document.body.addEventListener('mouseleave', () => {
+    if (window.electronAPI.getCurrentDisplayMode() === 'btc') {
+      titleElement.style.color = 'rgba(247, 147, 26, 0.15)'; // 极低透明度
+    } else {
+      titleElement.style.color = 'rgba(255, 215, 0, 0.15)'; // 极低透明度
+    }
+  });
   
   // 设置事件监听器
   setupEventListeners();

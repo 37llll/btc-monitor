@@ -7,8 +7,8 @@
     body {
       margin: 0;
       padding: 10px;
-      background-color: rgba(20, 20, 20, 0.7);
-      color: white;
+      background-color: rgba(20, 20, 20, 0); /* 完全透明背景 */
+      color: rgba(255, 255, 255, 0.15); /* 极低透明度文字 */
       font-family: Arial, sans-serif;
       border-radius: 8px;
       overflow: hidden;
@@ -17,11 +17,10 @@
       height: 100px;
       cursor: pointer;
       transition: all 0.3s;
-      opacity: 0.8;
     }
     body:hover {
-      background-color: rgba(20, 20, 20, 1);
-      opacity: 0;
+      background-color: rgba(20, 20, 20, 1); /* 鼠标悬停时背景不透明 */
+      color: rgba(255, 255, 255, 1); /* 鼠标悬停时字体不透明 */
     }
     body:active {
       background-color: rgba(40, 40, 40, 1);
@@ -35,9 +34,12 @@
     }
     .title {
       font-size: 12px;
-      color: #888;
+      color: rgba(136, 136, 136, 0.15); /* 极低透明度 */
       margin-bottom: 2px;
       transition: color 0.3s;
+    }
+    body:hover .title {
+      color: rgba(136, 136, 136, 1); /* 鼠标悬停时不透明 */
     }
     #price {
       font-size: 24px;
@@ -50,13 +52,22 @@
       transition: all 0.3s;
     }
     .positive {
-      color: #4caf50;
+      color: rgba(76, 175, 80, 0.15); /* 极低透明度 */
+    }
+    body:hover .positive {
+      color: rgba(76, 175, 80, 1); /* 鼠标悬停时不透明 */
     }
     .negative {
-      color: #f44336;
+      color: rgba(244, 67, 54, 0.15); /* 极低透明度 */
+    }
+    body:hover .negative {
+      color: rgba(244, 67, 54, 1); /* 鼠标悬停时不透明 */
     }
     .neutral {
-      color: #ffffff;
+      color: rgba(255, 255, 255, 0.15); /* 极低透明度 */
+    }
+    body:hover .neutral {
+      color: rgba(255, 255, 255, 1); /* 鼠标悬停时不透明 */
     }
     #close-btn {
       position: absolute;
@@ -64,14 +75,18 @@
       right: 5px;
       width: 14px;
       height: 14px;
-      background-color: #f44336;
+      background-color: rgba(244, 67, 54, 0.15); /* 极低透明度 */
       border-radius: 50%;
       cursor: pointer;
       -webkit-app-region: no-drag;
-      transition: transform 0.2s;
+      transition: transform 0.2s, background-color 0.3s;
     }
     #close-btn:hover {
       transform: scale(1.1);
+      background-color: rgba(244, 67, 54, 1); /* 鼠标悬停时不透明 */
+    }
+    body:hover #close-btn {
+      background-color: rgba(244, 67, 54, 1); /* 鼠标悬停在body上时，关闭按钮不透明 */
     }
     .notification {
       transition: opacity 0.5s;
@@ -81,10 +96,13 @@
       position: absolute;
       bottom: 2px;
       font-size: 8px;
-      color: #777;
+      color: rgba(119, 119, 119, 0.15); /* 极低透明度 */
       width: 100%;
       text-align: center;
       left: 0;
+    }
+    body:hover .hint {
+      color: rgba(119, 119, 119, 1); /* 鼠标悬停时不透明 */
     }
     .mode-indicator {
       position: absolute;
@@ -94,9 +112,12 @@
       height: 14px;
       border-radius: 50%;
       transition: all 0.3s;
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.1); /* 极低透明度 */
       z-index: 10;
       cursor: help;
+    }
+    body:hover .mode-indicator {
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.6); /* 鼠标悬停时更明显 */
     }
     .mode-indicator:after {
       content: '';
@@ -106,9 +127,12 @@
       right: -3px;
       bottom: -3px;
       border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1); /* 极低透明度 */
       opacity: 0;
       transition: opacity 0.3s;
+    }
+    body:hover .mode-indicator:after {
+      border: 1px solid rgba(255, 255, 255, 0.3); /* 鼠标悬停时更明显 */
     }
     .mode-indicator:hover:after {
       opacity: 1;
@@ -127,13 +151,19 @@
       pointer-events: none;
     }
     .btc-mode {
-      background-color: #f7931a;
+      background-color: rgba(247, 147, 26, 0.15); /* 极低透明度 */
+    }
+    body:hover .btc-mode {
+      background-color: rgba(247, 147, 26, 1); /* 鼠标悬停时不透明 */
     }
     .btc-mode:hover:before {
       content: "BTC模式";
     }
     .gold-mode {
-      background-color: #ffd700;
+      background-color: rgba(255, 215, 0, 0.15); /* 极低透明度 */
+    }
+    body:hover .gold-mode {
+      background-color: rgba(255, 215, 0, 1); /* 鼠标悬停时不透明 */
     }
     .gold-mode:hover:before {
       content: "黄金模式";
@@ -145,6 +175,13 @@
       content: attr(data-tooltip) " (快速更新中)";
     }
     @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.1; box-shadow: 0 0 5px rgba(255, 255, 255, 0.1); }
+      100% { transform: scale(1.15); opacity: 0.2; box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
+    }
+    body:hover .fast-update {
+      animation: hover-pulse 1s infinite alternate;
+    }
+    @keyframes hover-pulse {
       0% { transform: scale(1); opacity: 0.6; box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
       100% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 12px rgba(255, 255, 255, 0.8); }
     }
